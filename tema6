@@ -1,0 +1,98 @@
+#include <iostream>
+#include <vector>
+#include <string>
+using namespace std;
+
+class Masina {
+protected:
+    string nrInmatriculare;
+    int oraInt, minutInt;
+    int oraIes, minutIes;
+public:
+    Masina(string nr, int oraIn, int minIn) : nrInmatriculare(nr), oraInt(oraIn), minutInt(minIn), oraIes(0), minutIes(0) {}
+    void setIesire(int oraOut, int minOut) {
+        oraIes = oraOut;
+        minutIes = minOut;
+    }
+    int calcDurata() const {
+        return (oraIes * 60 + minutIes) - (oraInt * 60 + minutInt);
+    }
+    string getNrInmatriculare() const { return nrInmatriculare; }
+    void afiseazaInformatii() const {
+        cout << "Masina " << nrInmatriculare << " a intrat la " << oraInt << ":" << minutInt;
+        if (oraIes != 0)
+            cout << " si a iesit la " << oraIes << ":" << minutIes;
+        cout << "\n";
+    }
+};
+
+class LocParcare {
+    bool ocupat;
+    Masina* masina;
+public:
+    LocParcare() : ocupat(false), masina(nullptr) {}
+    bool esteOcupat() const { return ocupat; }
+    void ocupaLoc(Masina* m) {
+        ocupat = true;
+        masina = m;
+    }
+    void elibereazaLoc() {
+        ocupat = false;
+        delete masina;
+        masina = nullptr;
+    }
+    Masina* getMasina() const { return masina; }
+};
+
+class Parcare {
+    vector<LocParcare> locuri;
+    double tarifPeOra;
+public:
+    Parcare(int numarLocuri, double tarif) : locuri(numarLocuri), tarifPeOra(tarif) {}
+    bool intraMasina(string nr, int ora, int minut) {
+        for (auto &loc : locuri) {
+            if (!loc.esteOcupat()) {
+                loc.ocupaLoc(new Masina(nr, ora, minut));
+                return true;
+            }
+        }
+        return false;
+    }
+    double iesireMasina(string nr, int ora, int minut) {
+        for (auto &loc : locuri) {
+            if (loc.esteOcupat() && loc.getMasina()->getNrInmatriculare() == nr) {
+                loc.getMasina()->setIesire(ora, minut);
+                int durata = loc.getMasina()->calcDurata();
+                double cost = (durata / 60.0) * tarifPeOra;
+                loc.getMasina()->afiseazaInformatii();
+                loc.elibereazaLoc();
+                return cost;
+            }
+        }
+        return -1;
+    }
+    int locuriDisponibile() const {
+        int count = 0;
+        for (const auto &loc : locuri) {
+            if (!loc.esteOcupat()) count++;
+        }
+        return count;
+    }
+};
+
+int main() {
+    Parcare parcare(5, 10.0);
+    
+    parcare.intraMasina("B123ABC", 10, 30);
+    parcare.intraMasina("AG456XYZ", 11, 00);
+    
+    cout << "Locuri disponibile: " << parcare.locuriDisponibile() << "\n";
+    
+    double cost = parcare.iesireMasina("B123ABC", 12, 45);
+    if (cost != -1)
+        cout << "Costul parcarii: " << cost << " RON\n";
+    
+    cout << "Locuri disponibile: " << parcare.locuriDisponibile() << "\n";
+    
+    return 0;
+}
